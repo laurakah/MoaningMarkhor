@@ -32,7 +32,8 @@ install() {
     apt-get install -y lighttpd
 
     #install node package manager
-    apt-get install -y npm
+    add_nodesource_pkgsrv
+    apt-get install -y nodejs
 
     #install munin
     apt-get install -y munin munin-node
