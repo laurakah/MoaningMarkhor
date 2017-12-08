@@ -91,7 +91,7 @@ usage() {
     echo "commands: "
     echo ""
     echo "install               install dependencies (requires root access)"
-    echo "configure             configure installed components"
+    echo "configuresys          configure installed components"
     echo "deploy                deploy artifacts"
 }
 
@@ -105,8 +105,8 @@ main() {
             fi
             install
             ;;
-        "configure")
-            configure
+        "configuresys")
+            configure_sys
             ;;
         "deploy")
             deploy
