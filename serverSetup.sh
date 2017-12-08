@@ -2,12 +2,24 @@
 
 set -u
 set -e
-set -n
-set -x
+#set -n
+#set -x
 
 WEB_PROJECT_DIR_NAME=website
 WEB_PROJECT_GIT_REPO=git@gitlab.com:foo/${WEB_PROJECT_DIR_NAME}.git
 HTTPD_DOCROOT_PARENT=/var/www
+
+add_nodesource_pkgsrv() {
+    wget https://deb.nodesource.com/gpgkey/nodesource.gpg.key
+    apt-key add nodesource.gpg.key
+    rm nodesource.gpg.key
+    f=/etc/apt/sources.list.d/nodesource.list
+    > $f
+    echo "deb https://deb.nodesource.com/node_8.x stretch main" >> $f
+    echo "deb-src https://deb.nodesource.com/node_8.x stretch main" >> $f
+    apt-get install -y apt-transport-https
+    apt-get update
+}
 
 install() {
     #install source control management
