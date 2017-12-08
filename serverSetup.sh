@@ -39,10 +39,34 @@ install() {
     apt-get install -y munin munin-node
 }
 
-configure() {
+configure_munin() {
+    d=/var/www/html/munin
+    f=/etc/munin/munin-node.conf
+    if [ ! -e $d ]; then
+        ln -s /var/cache/munin/www $d
+    fi
+    sed -i 's/localhost\.localdomain/dabserver/g' $f
+    sed -i 's/#host_name/host_name/g' $f
+    systemctl restart munin-node
+}
+
+configure_lighttpd() {
+    return
+}
+
+configure_sshkey() {
+    f=/home/dab/.ssh/id_rsa
+    if [ ! -e $f ]; then
+        su -c "ssh-keygen -f $f -N \"\"" - dab
+    fi
+}
+
+configure_sys() {
     #TODO: git: generate ssh key
+    configure_sshkey
     #TODO: lighttpd: prevent webserver from serving everything starting with .
     #TODO: munin: configure munin node hostname
+    configure_munin
     #TODO: mongodb: basic configuration
     #TODO: cron: set up new Cronjob for data evaluation script
     #TODO: cron: set up Cronjob for db backup
