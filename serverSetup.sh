@@ -28,6 +28,8 @@ install_mongoose() {
     apt-get install -y python-openssl
     if [ ! -e sleepy.mongoose ]; then
         git clone https://github.com/mongodb-labs/sleepy.mongoose
+        f=sleepy.mongoose/sleepymongoose/httpd.py
+        sed -i "s/HTTPServer((''/HTTPServer(('127.0.0.1'/g" $f
     fi
     f=/lib/systemd/system/mongoose.service
     > $f
