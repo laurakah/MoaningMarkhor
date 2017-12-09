@@ -69,24 +69,39 @@ install() {
 
 configure_munin() {
     d=/var/www/html/munin
-    f=/etc/munin/munin-node.conf
     if [ ! -e $d ]; then
         ln -s /var/cache/munin/www $d
     fi
+    f=/etc/munin/munin-node.conf
     sed -i 's/localhost\.localdomain/dabserver/g' $f
     sed -i 's/#host_name/host_name/g' $f
     systemctl restart munin-node
+    f=/etc/munin/munin.conf
+    sed -i 's/\[localhost\.localdomain\]/[dabserver]/g' $f
 }
 
 configure_lighttpd() {
     return
 }
 
+# check if ssh key or ssh archive exists, else create new ssh key
 configure_sshkey() {
-    f=/home/dab/.ssh/id_rsa
-    if [ ! -e $f ]; then
-        su -c "ssh-keygen -f $f -N \"\"" - dab
+    destDir=/home/dab/.ssh
+    keyFile=$destDir/id_rsa
+    archiveFile=sshkey.tar.gz
+    mkdir -p $destDir
+    chown dab:dab $destDir
+    if [ -e $keyFile ]; then
+        return
     fi
+    if [ ! -e $archiveFile ]; then
+        su -c "ssh-keygen -f $keyFile -N \"\"" - dab
+        tar -C $destDir -cvzf $archiveFile id_rsa id_rsa.pub authorized_keys
+        echo "SSH Key has been created. Please do not forget to copy the archive file to a secure place."
+    else
+        tar -xvzf $archiveFile -C $destDir
+    fi
+    # TODO: send archive via mail or something similar
 }
 
 configure_sys() {
