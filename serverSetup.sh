@@ -21,12 +21,40 @@ add_nodesource_pkgsrv() {
     apt-get update
 }
 
+install_mongoose() {
+    apt-get install -y python-setuptools
+    # attention: version should not be later than 2.7.2
+    easy_install pymongo==2.7.2
+    apt-get install -y python-openssl
+    if [ ! -e sleepy.mongoose ]; then
+        git clone https://github.com/mongodb-labs/sleepy.mongoose
+    fi
+    f=/lib/systemd/system/mongoose.service
+    > $f
+    echo "[Unit]" >> $f
+    echo "Description=MongoDB REST Interface" >> $f
+    echo "After=mongodb.service" >> $f
+    echo "" >> $f
+    echo "[Service]" >> $f
+    echo "ExecStart=/usr/bin/python /home/dab/sleepy.mongoose/httpd.py" >> $f
+    echo "Restart=always" >> $f
+    echo "" >> $f
+    echo "[Install]" >> $f
+    echo "WantedBy=multi-user.target" >> $f
+    systemctl daemon-reload
+    systemctl enable mongoose
+    systemctl start mongoose
+}
+
 install() {
     #install source control management
     apt-get install -y git
 
     #install object store
     apt-get install -y mongodb
+
+    #install rest interface
+    install_mongoose
 
     #install web server
     apt-get install -y lighttpd
