@@ -60,6 +60,8 @@ install() {
 
     #install web server
     apt-get install -y lighttpd
+    apt-get install -y apache2-utils
+    apt-get install -y pwgen
 
     #install node package manager
     add_nodesource_pkgsrv
@@ -100,7 +102,30 @@ configure_munin() {
 }
 
 configure_lighttpd() {
-    return
+    # create server proxy
+    k=/etc/lighttpd/api.user
+    > $k
+    htpasswd -b $k admin admin
+    f=/etc/lighttpd/conf-available/99-dabserver.conf
+    > $f
+    echo "\$HTTP[\"url\"] =~ \"^/api\" {" >> $f
+    echo "proxy.server = (\"\" => ((\"host\" => \"127.0.0.1\", \"port\" => \"27080\")))" >> $f
+    echo "auth.backend = \"htpasswd\"" >> $f
+    echo "auth.backend.htpasswd.userfile = \"/etc/lighttpd/api.user\"" >> $f
+    echo "auth.require = (\"\" => (\"method\" => \"basic\", \"realm\" => \"admin\", \"require\" => \"valid-user\"))" >> $f
+    echo "}" >> $f
+    cd /etc/lighttpd/conf-enabled
+    if [ ! -e 10-proxy.conf ]; then
+        ln -s ../conf-available/10-proxy.conf
+    fi
+    if [ ! -e 99-dabserver.conf ]; then
+        ln -s ../conf-available/99-dabserver.conf
+    fi
+    if [ ! -e 05-auth.conf ]; then
+        ln -s ../conf-available/05-auth.conf
+    fi
+    cd -
+    systemctl restart lighttpd
 }
 
 # check if ssh key or ssh archive exists, else create new ssh key
@@ -126,6 +151,7 @@ configure_sshkey() {
 configure_sys() {
     #TODO: git: generate ssh key
     configure_sshkey
+    configure_lighttpd
     #TODO: lighttpd: prevent webserver from serving everything starting with .
     configure_munin
     configure_munin_for_mongodb
