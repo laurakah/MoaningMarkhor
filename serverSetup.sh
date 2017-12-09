@@ -67,6 +67,23 @@ install() {
     apt-get install -y munin munin-node
 }
 
+configure_munin_for_mongodb() {
+    git clone https://github.com/comerford/mongo-munin
+    plugin_dir=/usr/share/munin/plugins
+    cp mongo-munin/mongo_* $plugin_dir
+    chmod +x $plugin_dir/mongo_*
+    plugins="$(ls -1 $plugin_dir | grep mongo_)"
+    cd /etc/munin/plugins
+    for p in $plugins; do
+        if [ ! -e $p ]; then
+            ln -s $plugin_dir/$p
+        fi
+    done
+    cd -
+    systemctl restart munin-node
+    rm -rf mongo-munin
+}
+
 configure_munin() {
     d=/var/www/html/munin
     if [ ! -e $d ]; then
@@ -108,8 +125,8 @@ configure_sys() {
     #TODO: git: generate ssh key
     configure_sshkey
     #TODO: lighttpd: prevent webserver from serving everything starting with .
-    #TODO: munin: configure munin node hostname
     configure_munin
+    configure_munin_for_mongodb
     #TODO: mongodb: basic configuration
     #TODO: cron: set up new Cronjob for data evaluation script
     #TODO: cron: set up Cronjob for db backup
