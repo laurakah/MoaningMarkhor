@@ -49,6 +49,12 @@ install_mongoose() {
 }
 
 install() {
+    #install ssl
+    apt-get install -y openssl
+
+    #install mail server
+    apt-get install -y exim4
+
     #install source control management
     apt-get install -y git
 
@@ -101,6 +107,22 @@ configure_munin() {
     sed -i 's/\[localhost\.localdomain\]/[dabserver]/g' $f
 }
 
+configure_ssl_key() {
+    archive=ssl_keys.tar.gz
+    destDir=/etc/lighttpd
+    if [ ! -e $archive ]; then
+        openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -sha256 -subj "/C=DE/ST=Berlin/L=Berlin/O=dab/OU=dab/CN=dabserver.de"
+        tar cvfz $archive key.pem cert.pem
+    else
+        tar xvfz $archive
+    fi
+    if [ ! -e $destDir/server.pem ]; then
+        cat key.pem cert.pem > server.pem
+        rm key.pem cert.pem
+        mv server.pem $destDir
+    fi
+}
+
 configure_lighttpd() {
     # create server proxy
     k=/etc/lighttpd/api.user
@@ -124,12 +146,15 @@ configure_lighttpd() {
     if [ ! -e 05-auth.conf ]; then
         ln -s ../conf-available/05-auth.conf
     fi
+    if [ ! -e 10-ssl.conf ]; then
+        ln -s ../conf-available/10-ssl.conf
+    fi
     cd -
     systemctl restart lighttpd
 }
 
 # check if ssh key or ssh archive exists, else create new ssh key
-configure_sshkey() {
+configure_ssh_key() {
     destDir=/home/dab/.ssh
     keyFile=$destDir/id_rsa
     archiveFile=sshkey.tar.gz
@@ -149,13 +174,15 @@ configure_sshkey() {
 }
 
 configure_sys() {
-    #TODO: git: generate ssh key
-    configure_sshkey
+    configure_ssh_key
+    configure_ssl_key
     configure_lighttpd
+    #TODO: redirect from http to https
     #TODO: lighttpd: prevent webserver from serving everything starting with .
     configure_munin
     configure_munin_for_mongodb
-    #TODO: mongodb: basic configuration
+    #TODO: mail
+    #TODO: mongodb: create db
     #TODO: cron: set up new Cronjob for data evaluation script
     #TODO: cron: set up Cronjob for db backup
     return
