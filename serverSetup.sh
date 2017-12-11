@@ -131,10 +131,13 @@ configure_lighttpd() {
     f=/etc/lighttpd/conf-available/99-dabserver.conf
     > $f
     echo "\$HTTP[\"url\"] =~ \"^/api\" {" >> $f
-    echo "proxy.server = (\"\" => ((\"host\" => \"127.0.0.1\", \"port\" => \"27080\")))" >> $f
+    echo "proxy.server = (\"\" => ((\"host\" => \"127.0.0.1\", " >> $f
+    echo "\"port\" => \"27080\")))" >>$f
     echo "auth.backend = \"htpasswd\"" >> $f
     echo "auth.backend.htpasswd.userfile = \"/etc/lighttpd/api.user\"" >> $f
-    echo "auth.require = (\"\" => (\"method\" => \"basic\", \"realm\" => \"admin\", \"require\" => \"valid-user\"))" >> $f
+    echo "auth.require = (\"\" => (\"method\" => \"basic\", " >> $f
+    echo "\"realm\" => \"admin\", " >> $f
+    echo "\"require\" => \"valid-user\"))" >> $f
     echo "}" >> $f
     cd /etc/lighttpd/conf-enabled
     if [ ! -e 10-proxy.conf ]; then
@@ -177,6 +180,7 @@ configure_sys() {
     configure_ssh_key
     configure_ssl_key
     configure_lighttpd
+    #TODO: use lets encrypt to create ssl key
     #TODO: redirect from http to https
     #TODO: lighttpd: prevent webserver from serving everything starting with .
     configure_munin
