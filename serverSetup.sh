@@ -98,6 +98,30 @@ configure_munin_for_mongodb() {
     rm -rf mongo-munin
 }
 
+configure_munin_for_lighttpd() {
+    if [ ! -e /etc/lighttpd/conf-enabled/10-status.conf ]; then
+        cd /etc/lighttpd/conf-enabled
+        ln -s ../conf-available/10-status.conf
+        cd -
+    fi
+    sed -Ei "s/# (status\.status-url)/\1/g" /etc/lighttpd/conf-available/10-status.conf
+    systemctl restart lighttpd
+    wget -O lighttpd https://redmine.lighttpd.net/attachments/download/1153/lighttpd2_munin.py
+    chmod +x lighttpd
+    plugin_dir=/usr/share/munin/plugins
+    conf_dir=/etc/munin
+    mv lighttpd $plugin_dir
+    cd /etc/munin/plugins
+    for p in requests connections traffic statuscodes; do
+        linkPath=$conf_dir/plugins/lighttpd_$p
+        if [ ! -e $linkPath ]; then
+            ln -s $plugin_dir/lighttpd $linkPath
+        fi
+    done
+    cd -
+    systemctl restart munin-node
+}
+
 configure_munin() {
     d=/var/www/html/munin
     if [ ! -e $d ]; then
@@ -135,8 +159,8 @@ configure_lighttpd() {
     f=/etc/lighttpd/conf-available/99-dabserver.conf
     > $f
     echo "\$HTTP[\"scheme\"] == \"http\" {" >> $f
-    echo "\$HTTP[\"host\"] =~ \".*\" {" >> $f
-    echo "url.redirect = (\".*\" => \"https://%0\$0\")" >> $f
+    echo "\$HTTP[\"host\"] == \"vr10046.webspaceconfig.de\" {" >> $f
+    echo "url.redirect = (\".*\" => \"https://vr10046.webspaceconfig.de\$0\")" >> $f
     echo "}" >> $f
     echo "}" >> $f
     echo "\$HTTP[\"url\"] =~ \"^/api\" {" >> $f
@@ -192,15 +216,14 @@ configure_sys() {
     configure_ssl_key
     configure_lighttpd
     #TODO: use lets encrypt to create ssl key
-    #TODO: redirect from http to https
     #TODO: lighttpd: prevent webserver from serving everything starting with .
     configure_munin
     configure_munin_for_mongodb
+    configure_munin_for_lighttpd
     #TODO: mail
     #TODO: mongodb: create db
     #TODO: cron: set up new Cronjob for data evaluation script
     #TODO: cron: set up Cronjob for db backup
-    return
 }
 
 deploy() {
